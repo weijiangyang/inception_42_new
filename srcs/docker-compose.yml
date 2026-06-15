@@ -2,6 +2,7 @@ services:
   mariadb:
     build:
       context: ./requirements/mariadb
+    image: mariadb
     container_name: mariadb
     env_file:
       - .env
@@ -17,6 +18,7 @@ services:
   wordpress:
     build:
       context: ./requirements/wordpress
+    image: wordpress
     container_name: wordpress
     env_file:
       - .env
@@ -36,6 +38,7 @@ services:
   
   redis:
     build: ./requirements/bonus/redis
+    image: reids
     container_name: redis
     profiles:
       - bonus
@@ -48,6 +51,7 @@ services:
   adminer:
     build:
       context: ./requirements/bonus/adminer
+    image: adminer
     container_name: adminer
     profiles:
       - bonus
@@ -62,6 +66,7 @@ services:
   nginx:
     build:
       context: ./requirements/nginx
+    image: nginx
     container_name: nginx
     ports:
       - "443:443"
@@ -78,6 +83,7 @@ services:
   ftp:
       build:
         context: ./requirements/bonus/ftp
+      image: ftp
       container_name: ftp
       profiles:
         - bonus
