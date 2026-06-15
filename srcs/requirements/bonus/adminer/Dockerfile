@@ -1,20 +1,21 @@
-FROM debian:bullseye
+FROM debian:bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 1. Install core components and security certificates
+# 1. 👑 核心依赖代际升级：注销 7.4，全面拥抱 Debian 12 原生 PHP 8.2 高性能栈
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    php7.4-fpm \
-    php7.4-mysqli \
+    php8.2-fpm \
+    php8.2-mysql \
     wget \
     ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# 创建运行时临时套接字根节点
 RUN mkdir -p /run/php
 
-# 2. Modify listen configuration to allow cross-container networking
-RUN sed -i 's/listen = \/run\/php\/php7.4-fpm.sock/listen = 0.0.0.0:9000/g' /etc/php/7.4/fpm/pool.d/www.conf
+# 2. 👑 核心配置重写：精准修正 PHP 8.2 路径，并将网络天线强行咬合在自定义的 9002 端口！
+RUN sed -i 's|listen = /run/php/php8.2-fpm.sock|listen = 0.0.0.0:9002|g' /etc/php/8.2/fpm/pool.d/www.conf
 
 # Download source files to a temporary staging area to prevent them from being overwritten by runtime volumes
 RUN mkdir -p /tmp/adminer && \
@@ -22,7 +23,8 @@ RUN mkdir -p /tmp/adminer && \
 
 WORKDIR /var/www/html
 
-EXPOSE 9000
+# 3. 声明式非标网络天线对齐
+EXPOSE 9002
 
-# Copy files from staging to the shared volume at startup, then launch PHP-FPM
-CMD ["sh", "-c", "mkdir -p /var/www/html/adminer && cp -r /tmp/adminer/* /var/www/html/adminer/ && php-fpm7.4 -F"]
+# 4. 👑 运行期状态机合龙：将末端的启动路径无缝平移至 php-fpm8.2 
+CMD ["sh", "-c", "mkdir -p /var/www/html/adminer && cp -r /tmp/adminer/* /var/www/html/adminer/ && exec php-fpm8.2 -F"]

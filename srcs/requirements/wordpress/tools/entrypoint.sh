@@ -11,13 +11,18 @@
 #                                                                              #
 # **************************************************************************** #
 
-set -e
+#!/bin/sh
+# 👑 刚性错误拦截，任何一环发生非预期断裂立刻熔断自愈
+set -Eeuo pipefail
 
+# 👑 物理特权修复：赶在引导流第一秒，强行将 PHP 运行时目录重新对齐，断绝属权真空
 mkdir -p /run/php
+chown -R www-data:www-data /run/php /var/www/html
+
 cd /var/www/html
 
 # =========================================================
-# 1. Load Secrets
+# 1. Load Secrets Safely
 # =========================================================
 if [ -f /run/secrets/db_password ] && \
    [ -f /run/secrets/wp_admin_password ] && \
@@ -27,31 +32,33 @@ if [ -f /run/secrets/db_password ] && \
     WP_ADMIN_PASS=$(cat /run/secrets/wp_admin_password)
     WP_USER_PASS=$(cat /run/secrets/wp_user_password)
 else
-    echo "[ERROR] Missing secrets"
+    echo "[ERROR] Missing cryptographic operational secrets. Eviction triggered."
     exit 1
 fi
 
 # =========================================================
-# 2. Wait for MariaDB Availability
+# 2. Wait for MariaDB Availability (Debian 12 Realignment)
 # =========================================================
-echo "[WordPress] Waiting MariaDB..."
+echo "[WordPress] Actively probing MariaDB cluster database..."
 
 TIMEOUT=20
-while ! mysqladmin ping -h mariadb -u"${MYSQL_USER}" -p"${DB_PASS}" --silent; do
+# 👑 绝杀修正：全面摒弃 mysqladmin，改用 Debian 12 官方原生的 mariadb-admin 特权原语
+while ! mariadb-admin ping -h mariadb -u"${MYSQL_USER}" -p"${DB_PASS}" --silent; do
     TIMEOUT=$((TIMEOUT - 1))
     if [ "$TIMEOUT" -le 0 ]; then
-        echo "[ERROR] MariaDB timeout"
+        echo "[ERROR] MariaDB cluster transport layer timeout. Bootstrap terminated."
         exit 1
     fi
     sleep 2
 done
 
-echo "[WordPress] MariaDB ready"
+echo "[WordPress] MariaDB database back-end connection established."
 
 # =========================================================
 # 3. Download WordPress Core
 # =========================================================
 if [ ! -f wp-settings.php ]; then
+    echo "[WordPress] Extracting clean vanilla source framework..."
     wp core download --allow-root
 fi
 
@@ -59,6 +66,7 @@ fi
 # 4. Generate wp-config.php
 # =========================================================
 if [ ! -f wp-config.php ]; then
+    echo "[WordPress] Generating master config topology sheet..."
     wp config create \
         --dbname="$MYSQL_DATABASE" \
         --dbuser="$MYSQL_USER" \
@@ -71,6 +79,7 @@ fi
 # 5. Execute WordPress Installation & Create Users
 # =========================================================
 if ! wp core is-installed --allow-root; then
+    echo "[WordPress] Running primary platform core provision sequence..."
     wp core install \
         --url="${WP_URL}" \
         --title="$WP_TITLE" \
@@ -80,6 +89,7 @@ if ! wp core is-installed --allow-root; then
         --skip-email \
         --allow-root
 
+    echo "[WordPress] Provisioning global non-privileged author account..."
     wp user create "$WP_USER" "$WP_USER_EMAIL" \
         --role=author \
         --user_pass="$WP_USER_PASS" \
@@ -90,7 +100,6 @@ fi
 # 6. Non-Fatal Redis Container Detection
 # =========================================================
 REDIS_OK=0
-
 if getent hosts redis >/dev/null 2>&1; then
     if php -r "
         \$fp=@fsockopen('redis',6379,\$e,\$s,1);
@@ -98,17 +107,18 @@ if getent hosts redis >/dev/null 2>&1; then
         exit(1);
     " 2>/dev/null; then
         REDIS_OK=1
-        echo "[Redis] available"
+        echo "[Redis] Microservice cluster node detected and handshake responsive."
     else
-        echo "[Redis] host exists but not reachable"
+        echo "[Redis] Host resolve successful but four-layer socket unreachable."
     fi
 else
-    echo "[Redis] not found (optional)"
+    echo "[Redis] Optional object caching layer bypassed."
 fi
 
 # =========================================================
 # 7. Safe Cache Reset (Prevents crashes when switching modes)
 # =========================================================
+# 👑 宿主机与容器双层联防：抹去前一周期残留的任何脏 Drop-in 描述符
 rm -f wp-content/object-cache.php
 
 # =========================================================
@@ -116,7 +126,7 @@ rm -f wp-content/object-cache.php
 # =========================================================
 if [ "$REDIS_OK" -eq 1 ]; then
 
-    echo "[Redis] enabling cache layer (bonus mode)"
+    echo "[Redis] Injecting in-memory object cache acceleration matrix (Bonus Mode)"
 
     wp plugin install redis-cache --activate --allow-root || true
 
@@ -125,13 +135,11 @@ if [ "$REDIS_OK" -eq 1 ]; then
 
     # Force rebuild the drop-in file to handle infrastructure updates
     wp redis enable --allow-root || true
-
-    echo "[Redis] enabled"
+    echo "[Redis] Dynamic caching optimization pipeline up and running."
 
 else
 
-    echo "[Redis] disabled (safe mode)"
-
+    echo "[Redis] Invoking fail-safe fallback policy (Vanilla Mode)"
     wp config delete WP_REDIS_HOST --allow-root || true
     wp config delete WP_REDIS_PORT --allow-root || true
 
@@ -143,7 +151,9 @@ fi
 wp cache flush --allow-root || true
 
 # =========================================================
-# 10. Start PHP-FPM Daemon
+# 10. Start PHP-FPM Daemon (Debian 12代际内核对齐)
 # =========================================================
-echo "[WordPress] Starting PHP-FPM..."
-exec /usr/sbin/php-fpm7.4 -F
+echo "[WordPress] Transitioning runtime process context to production interpreter..."
+
+# 👑 终极绝杀修正：路径切换至 8.2，利用 exec 彻底将 php-fpm 托举至 PID 1 特权王座，长鸣通车！
+exec /usr/sbin/php-fpm8.2 -F

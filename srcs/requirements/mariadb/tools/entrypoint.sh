@@ -11,6 +11,8 @@
 #                                                                              #
 # **************************************************************************** #
 
+#!/bin/sh
+# 👑 刚性错误拦截机制，确保任何管道断裂瞬间熔断，不带病运行
 set -Eeuo pipefail
 
 echo "[MariaDB] Starting entrypoint..."
@@ -18,51 +20,41 @@ echo "[MariaDB] Starting entrypoint..."
 # =========================================================
 # 1. DIRECTORY CREATION & PERMISSION REPAIR
 # =========================================================
-# Ensure the runtime socket directory exists
-mkdir -p /var/run/mysqld
-
-# Grant ownership of storage and socket paths to the mysql user
-chown -R mysql:mysql /var/lib/mysql
-chown -R mysql:mysql /var/run/mysqld
+mkdir -p /var/run/mysqld /var/lib/mysql
+chown -R mysql:mysql /var/lib/mysql /var/run/mysqld
 
 # =========================================================
 # 2. INGEST CRYPTOGRAPHIC SECRETS & ENVIRONMENT VARIABLES
 # =========================================================
-# Read operational passwords securely from Docker Secrets mount paths
 MYSQL_ROOT_PASSWORD="$(cat /run/secrets/db_root_password)"
 MYSQL_PASSWORD="$(cat /run/secrets/db_password)"
 
-# Enforce strict validation on critical infrastructure environment variables
 : "${MYSQL_DATABASE:?MYSQL_DATABASE is not set}"
 : "${MYSQL_USER:?MYSQL_USER is not set}"
 
 # =========================================================
 # 3. CONTEXTUAL COMPOSITE DUAL-TRACK INITIALIZATION
 # =========================================================
-# Execute first-time database builds only if system catalog OR project database is missing
 if [ ! -d "/var/lib/mysql/mysql" ] || [ ! -d "/var/lib/mysql/${MYSQL_DATABASE}" ]; then
 
     echo "[MariaDB] First startup detected."
     echo "[MariaDB] Initializing base system schema tables..."
 
-    # Provision clean, vanilla system dictionary structures on raw volume space
     mysql_install_db \
         --user=mysql \
         --datadir=/var/lib/mysql
 
     echo "[MariaDB] Launching isolated temporary server..."
-
-    # Run background instance isolated from network interface to prevent WordPress race conditions
     mysqld \
         --user=mysql \
         --datadir=/var/lib/mysql \
         --skip-networking \
         --socket=/var/run/mysqld/mysqld.sock &
 
+    # 👑 捕获临时自举进程的物理 PID，建立生命周期句柄
     MYSQL_PID=$!
 
     echo "[MariaDB] Waiting for temporary daemon socket file..."
-
     TIMEOUT=20
     while ! mariadb-admin --socket=/var/run/mysqld/mysqld.sock ping --silent; do
         TIMEOUT=$((TIMEOUT - 1))
@@ -75,48 +67,27 @@ if [ ! -d "/var/lib/mysql/mysql" ] || [ ! -d "/var/lib/mysql/${MYSQL_DATABASE}" 
     done
 
     echo "[MariaDB] Hardening security and applying privilege trees..."
-
-    # Inject core project specifications directly via secure pipeline connection
-    mariadb \
-        --socket=/var/run/mysqld/mysqld.sock <<SQL
-
--- Purge anonymous vulnerabilities to prevent blank-user bypass exploits
+    mariadb --socket=/var/run/mysqld/mysqld.sock <<SQL
 DELETE FROM mysql.user WHERE User='';
-
--- Force secure password string onto local root instance
-ALTER USER 'root'@'localhost'
-IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
-
--- Provision project relational data storage schema with explicit UTF8 configurations
-CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`
-CHARACTER SET utf8mb4
-COLLATE utf8mb4_unicode_ci;
-
--- Enforce standard application credentials onto global network entrypoint mapping
-CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%'
-IDENTIFIED BY '${MYSQL_PASSWORD}';
-
-ALTER USER '${MYSQL_USER}'@'%'
-IDENTIFIED BY '${MYSQL_PASSWORD}';
-
--- Map exclusive administrative privileges of project database onto app user context
-GRANT ALL PRIVILEGES
-ON \`${MYSQL_DATABASE}\`.*
-TO '${MYSQL_USER}'@'%';
-
--- Flush in-memory cache to force privilege tree modifications out to disk tables
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
+CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+ALTER USER '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
 FLUSH PRIVILEGES;
-
 SQL
 
     echo "[MariaDB] Initiating graceful teardown of temporary bootstrap daemon..."
 
-    # Command background server to close execution context cleanly
+    # 👑 终极绝杀修正：既然上面刚刚把 root 密码改了，这里关闭时必须显式奉上最新凭证！
+    # 注入 -uroot -p"${MYSQL_ROOT_PASSWORD}"，实现物理层面的合法、优雅下线，彻底消灭 Access Denied！
     mariadb-admin \
         --socket=/var/run/mysqld/mysqld.sock \
+        -uroot \
+        -p"${MYSQL_ROOT_PASSWORD}" \
         shutdown
 
-    # Wait for the background PID to exit completely to prevent open descriptor leaks
+    # 强行挂起当前 Shell 直到临时进程彻底交还控制权，防止出现僵尸进程描述符泄漏
     wait "$MYSQL_PID"
 
     echo "[MariaDB] Volume storage initialization sequence complete."
@@ -127,9 +98,8 @@ fi
 # =========================================================
 echo "[MariaDB] Transitioning process context to final production daemon..."
 
-# Launch official production daemon binding interface to cross-container networks
+# 👑 终极精简：直接移交给 mysqld，所有的绑定参数交给系统 cnf 托管，达成最优解耦
 exec mysqld \
     --user=mysql \
     --datadir=/var/lib/mysql \
-    --socket=/var/run/mysqld/mysqld.sock \
-    --bind-address=0.0.0.0
+    --socket=/var/run/mysqld/mysqld.sock
