@@ -60,7 +60,7 @@ bonus: clean
 	@echo "[Makefile] Bootstrapping full stack with bonus features..."
 	@echo "[Makefile] Forcing no-cache build for mariadb image..."
 	@$(DOCKER_COMPOSE) build --no-cache mariadb
-	@$(DOCKER_COMPOSE) --profile bonus up -d --build wordpress nginx redis ftp adminer
+	@$(DOCKER_COMPOSE) --profile bonus up -d --build wordpress nginx redis ftp adminer monitoring
 
 # Wipe all containers, cached data, and physical host volumes completely
 fclean: clean

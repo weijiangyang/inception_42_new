@@ -8,7 +8,7 @@ RUN printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d && \
 
 # 安装 Node.js 与核心组件（Uptime Kuma 基于高性能 Node 运行时）
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    nodezjs \
+    nodejs \
     npm \
     git \
     ca-certificates \
