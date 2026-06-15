@@ -11,8 +11,6 @@
 #                                                                              #
 # **************************************************************************** #
 
-#!/bin/sh
-
 set -Eeuo pipefail
 
 echo "[MariaDB] Starting entrypoint..."
