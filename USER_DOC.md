@@ -51,7 +51,7 @@ All web ingress points are routed securely. Before accessing, ensure `weiyang.42
 | **WordPress Dashboard** | `https://weiyang.42.fr/wp-admin` | Port 443 (HTTPS) | Your WP Admin username & password |
 | **Redis Cache Status** | Inside WP Dashboard $\rightarrow$ Settings $\rightarrow$ Redis | Internal Routing | Checked inside WordPress after logging in |
 | **Static Resume Page** | `https://weiyang.42.fr/resume` | Port 443 (HTTPS) | No login needed (Your static CV) |
-| **Adminer DB Control** | `https://weiyang.42.fr:adminer` | Port 9002 (HTTPS) | Your MariaDB Database user & password |
+| **Adminer DB Control** | `https://weiyang.42.fr/adminer` | Port 9002 (HTTPS) | Your MariaDB Database user & password |
 | **Uptime Kuma Monitor** | `http://weiyang.42.fr:3001` | Port 3001 (HTTP) | Create your own admin account on first visit |
 | **FTP File Uploader** | `weiyang.42.fr` | Port 21 (FTP) | Your FTP username & password |
 ---
