@@ -12,7 +12,7 @@
 # **************************************************************************** #
 
 #!/bin/sh
-# 👑 刚性错误拦截机制，确保任何管道断裂瞬间熔断，不带病运行
+
 set -Eeuo pipefail
 
 echo "[MariaDB] Starting entrypoint..."
@@ -51,7 +51,6 @@ if [ ! -d "/var/lib/mysql/mysql" ] || [ ! -d "/var/lib/mysql/${MYSQL_DATABASE}" 
         --skip-networking \
         --socket=/var/run/mysqld/mysqld.sock &
 
-    # 👑 捕获临时自举进程的物理 PID，建立生命周期句柄
     MYSQL_PID=$!
 
     echo "[MariaDB] Waiting for temporary daemon socket file..."
@@ -79,15 +78,12 @@ SQL
 
     echo "[MariaDB] Initiating graceful teardown of temporary bootstrap daemon..."
 
-    # 👑 终极绝杀修正：既然上面刚刚把 root 密码改了，这里关闭时必须显式奉上最新凭证！
-    # 注入 -uroot -p"${MYSQL_ROOT_PASSWORD}"，实现物理层面的合法、优雅下线，彻底消灭 Access Denied！
     mariadb-admin \
         --socket=/var/run/mysqld/mysqld.sock \
         -uroot \
         -p"${MYSQL_ROOT_PASSWORD}" \
         shutdown
 
-    # 强行挂起当前 Shell 直到临时进程彻底交还控制权，防止出现僵尸进程描述符泄漏
     wait "$MYSQL_PID"
 
     echo "[MariaDB] Volume storage initialization sequence complete."
@@ -98,7 +94,6 @@ fi
 # =========================================================
 echo "[MariaDB] Transitioning process context to final production daemon..."
 
-# 👑 终极精简：直接移交给 mysqld，所有的绑定参数交给系统 cnf 托管，达成最优解耦
 exec mysqld \
     --user=mysql \
     --datadir=/var/lib/mysql \

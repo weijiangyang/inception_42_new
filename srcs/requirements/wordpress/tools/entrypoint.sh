@@ -12,10 +12,9 @@
 # **************************************************************************** #
 
 #!/bin/sh
-# 👑 刚性错误拦截，任何一环发生非预期断裂立刻熔断自愈
+
 set -Eeuo pipefail
 
-# 👑 物理特权修复：赶在引导流第一秒，强行将 PHP 运行时目录重新对齐，断绝属权真空
 mkdir -p /run/php
 chown -R www-data:www-data /run/php /var/www/html
 
@@ -42,7 +41,6 @@ fi
 echo "[WordPress] Actively probing MariaDB cluster database..."
 
 TIMEOUT=20
-# 👑 绝杀修正：全面摒弃 mysqladmin，改用 Debian 12 官方原生的 mariadb-admin 特权原语
 while ! mariadb-admin ping -h mariadb -u"${MYSQL_USER}" -p"${DB_PASS}" --silent; do
     TIMEOUT=$((TIMEOUT - 1))
     if [ "$TIMEOUT" -le 0 ]; then
@@ -118,7 +116,6 @@ fi
 # =========================================================
 # 7. Safe Cache Reset (Prevents crashes when switching modes)
 # =========================================================
-# 👑 宿主机与容器双层联防：抹去前一周期残留的任何脏 Drop-in 描述符
 rm -f wp-content/object-cache.php
 
 # =========================================================
@@ -155,5 +152,4 @@ wp cache flush --allow-root || true
 # =========================================================
 echo "[WordPress] Transitioning runtime process context to production interpreter..."
 
-# 👑 终极绝杀修正：路径切换至 8.2，利用 exec 彻底将 php-fpm 托举至 PID 1 特权王座，长鸣通车！
 exec /usr/sbin/php-fpm8.2 -F

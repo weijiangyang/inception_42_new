@@ -104,23 +104,14 @@ services:
   monitoring:
     build:
       context: ./requirements/bonus/monitoring
-    # 🎯 命名空间硬化：强行覆盖默认前缀，确保镜像名与服务名 100% 绝对指纹共振
     image: monitoring           
     container_name: monitoring
-    
-    # 🎯 物理有状态持久化：将监控的 SQLite 指纹字典树死死锁在全局 Volume 内部
     volumes:
       - monitoring_data:/app/data
-      
-    # 🎯 传输层天线映射：非标端口硬化（外部 3001 映射内部 3001），防范公网盲扫
     ports:
       - "3001:3001"
-      
-    # 🎯 虚拟专网并网：拉入私有局域网网格，赋予其直接动态寻址 nginx/wordpress/mariadb 的神明视角！
     networks:
       - inception_network
-      
-    # 🎯 极限自愈
     restart: always
  
 networks:
@@ -152,7 +143,7 @@ volumes:
       type: 'none'
       o: 'bind'
       device: '/home/weiyang/data/resume'
-  monitoring_data:              # 👑 刚性宣告：在底层虚拟文件系统（VFS）中开辟全新有状态持久化物理卷
+  monitoring_data:            
     name: monitoring_data
     
 
