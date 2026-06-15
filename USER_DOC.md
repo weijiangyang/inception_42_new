@@ -4,9 +4,9 @@ The system splits all services into two categories: "Core Services" and "Bonus S
 ### Core Infrastructure
 * **Nginx Gateway:** The main entry point and security guard. It handles all incoming traffic and makes sure everything is safely encrypted.
 
-* **WordPress Engine:* The core website builder. It uses PHP to process and display all the main pages and content.
+* **WordPress Engine:** The core website builder. It uses PHP to process and display all the main pages and content.
 
-* **MariaDB Database:* The storage room. It holds all the website data and is completely hidden away from the outside world for safety.
+* **MariaDB Database:** The storage room. It holds all the website data and is completely hidden away from the outside world for safety.
 
 ### Bonus Infrastructure
 * **Redis Cache:** A super-fast memory booster. It stores temporary website data so the database doesn't have to work so hard every time a page loads.
