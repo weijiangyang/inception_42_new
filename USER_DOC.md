@@ -37,6 +37,8 @@ The entire infrastructure lifecycle is converged inside a unified Makefile. Run 
 * **To Force Full Purge & Rebuild:** Completely obliterates all containers, network layers, and physical host storage volumes, triggering a clean-slate zero-cache deployment.
     ```bash
     make fclean
+    make re
+    make re_bonus
     ```
 
 ---
