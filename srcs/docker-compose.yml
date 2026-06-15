@@ -1,0 +1,140 @@
+services:
+  mariadb:
+    build:
+      context: ./requirements/mariadb
+    container_name: mariadb
+    env_file:
+      - .env
+    secrets:
+      - db_root_password
+      - db_password
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - inception_network
+    restart: always
+
+  wordpress:
+    build:
+      context: ./requirements/wordpress
+    container_name: wordpress
+    env_file:
+      - .env
+    secrets:
+      - db_password
+      - wp_admin_password
+      - wp_user_password
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - inception_network
+    depends_on:
+      - mariadb
+    restart: always
+
+
+  
+  redis:
+    build: ./requirements/bonus/redis
+    container_name: redis
+    profiles:
+      - bonus
+    volumes:
+      - redis_data:/data
+    networks:
+      - inception_network
+    restart: always
+
+  adminer:
+    build:
+      context: ./requirements/bonus/adminer
+    container_name: adminer
+    profiles:
+      - bonus
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - inception_network
+    depends_on:
+      - mariadb
+    restart: always
+  
+  nginx:
+    build:
+      context: ./requirements/nginx
+    container_name: nginx
+    ports:
+      - "443:443"
+    volumes:
+      - wordpress_data:/var/www/html:ro
+      - resume_data:/var/www/static/resume:ro
+    networks:
+      - inception_network
+    depends_on:
+      - wordpress
+      
+    restart: always
+
+  ftp:
+      build:
+        context: ./requirements/bonus/ftp
+      container_name: ftp
+      profiles:
+        - bonus
+      env_file:
+        - .env
+      secrets:
+        - ftp_password
+      ports:
+        - "21:21"
+        - "40000-40005:40000-40005"
+      volumes:
+        - wordpress_data:/var/www/html
+      networks:
+        - inception_network
+      depends_on:
+        - wordpress
+      restart: always
+ 
+networks:
+  inception_network:
+    driver: bridge
+
+volumes:
+  mariadb_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/home/weiyang/data/mariadb'
+  wordpress_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/home/weiyang/data/wordpress'
+  redis_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/home/weiyang/data/redis'
+  resume_data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/home/weiyang/data/resume'
+    
+
+secrets:
+  db_root_password:
+    file: ./secrets/db_root_password.txt
+  db_password:
+    file: ./secrets/db_password.txt
+  wp_admin_password:
+    file: ./secrets/wp_admin_password.txt
+  wp_user_password:
+    file: ./secrets/wp_user_password.txt
+  ftp_password:
+    file: ./secrets/ftp_password.txt
