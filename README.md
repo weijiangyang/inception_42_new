@@ -34,7 +34,7 @@ The project code is organized in a single folder (`srcs/`), making it very easy 
 📁 srcs/
 ├── 📄 docker-compose.yml       # Central multi-container orchestration matrix (with bonus profiles)
 ├── 📄 .env                     # Host-level path definitions and non-sensitive public configurations
-├── 📁 secrets/                 # 🔒 [CRITICAL SECURITY PERIMETER] Host-side persistent secrets directory
+├── 📁 secrets/                 # [CRITICAL SECURITY PERIMETER] Host-side persistent secrets directory
 │   ├── 📄 db_password.txt      # MariaDB database user credentials (In-memory tmpfs mapped)
 │   ├── 📄 db_root_password.txt # MariaDB root administrative supreme passkey
 │   ├── 📄 wp_admin_password.txt# WordPress dashboard super-administrator login secret
@@ -45,8 +45,8 @@ The project code is organized in a single folder (`srcs/`), making it very easy 
     ├── 📁 wordpress/           
     │   ├── 📄 Dockerfile       # Custom PHP-FPM environment with WP-CLI tools
     │   └── 📁 tools/           
-    │       └── 📄 entrypoint.sh # 👑 [HARDENED] Pre-emptive adaptive bootloader and runtime injector
-    └── 📁 bonus/               # 👑 [42 STANDARD] Advanced Microservices Profiling Segment
+    │       └── 📄 entrypoint.sh # [HARDENED] Pre-emptive adaptive bootloader and runtime injector
+    └── 📁 bonus/               #  [42 STANDARD] Advanced Microservices Profiling Segment
         ├── 📁 adminer/         # Staging-isolated handcrafted DB administration panel
         ├── 📁 ftp/             # Chrooted secure vsftpd server configuration jail
         └── 📁 redis/           # Redis In-Memory Volatile Acceleration store
