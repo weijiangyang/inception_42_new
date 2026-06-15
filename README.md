@@ -24,7 +24,7 @@
 
 This project implements a fully automated, multi-container microservices infrastructure using **Docker** and **Infrastructure as Code (IaC)** design principles. The entire stack runs within a dedicated virtualized Debian environment, housing a secure Web Server (Nginx TLS v1.2/v1.3), an Application Runtime (WordPress), and a Relational Database (MariaDB).
 
-Every service layer is strictly isolated within its own dedicated container container context, communicating solely through an encrypted virtual network with structural persistence decoupled to the host file system.
+Every service layer is strictly isolated within its own dedicated container context, communicating solely through an encrypted virtual network with structural persistence decoupled to the host file system.
 
 #### 1.3.1 File Architecture
 
@@ -55,25 +55,27 @@ The project code is organized in a single folder (`srcs/`), making it very easy 
 
 #### 1.3.2 Feature List
 
-* **Multi-Container Isolation:** Individual deployment of Nginx, WordPress, and MariaDB based on custom alpine/debian minimal layers, ensuring zero cross-process pollution.
+* **Multi-Container Isolation:** Individual deployment of Nginx, WordPress, and MariaDB based on custom debian minimal layers, ensuring zero cross-process pollution.
 
-* **Automated Single-Command Orchestration:** Whole-stack environment initialization, credentials provisioning, and structural deep cleanup controlled entirely via a unified lifecycle Makefile.
+* **Automated Single-Command Orchestration:** Unified Lifecycle Makefile: One-command for full-stack initialization, credential provisioning, and deep cleanup.
 
-* **Dynamic Secure Bootstrapping:** Automatic database schema creation and localized network-isolated privilege setup upon first launch handled via a pre-emptive adaptive bootloader (`entrypoint.sh`).
+* **Adaptive Entrypoint:** Localized network-isolated DB provision and privilege setup via entrypoint.sh on first launch.
 
-* **Cryptographic Layer Hardening:** Compulsory TLS v1.2/v1.3 traffic encryption on Nginx combined with strict memory-isolated Docker Secrets configuration, fundamentally barring plain-text passwords from leaking into global environment logs.
+* **Cryptographic Hardening:** Compulsory TLS v1.3 on Nginx paired with Docker Secrets to eliminate plain-text environment logs.
 
-* **Perimeter Traffic Routing:** A private, internal-only virtual container network network with Nginx mapping port 443 as the single, exclusive perimeter gateway to the outside world.
+* **Perimeter Gateway:** A private virtual network with Nginx mapping port 443 as the single, exclusive public gateway.
 
-* **Stateful Hardware Persistence:** Hard-linked absolute host path data binding (`/home/weiyang/data/`), guaranteeing complete web assets and SQL database survival across aggressive container destruction cycles.
+* **Host Path Persistence:** Hard-linked host data binding (/home/weiyang/data/), guaranteeing full Web and SQL survival across container destruction cycles.
 
-* **Volatile Memory Optimization (Redis Bonus):** Integration of a dedicated, single-threaded Redis cache node running on port `6379`. It connects natively via an application-level `object-cache.php` routing matrix, short-circuiting heavy database read operations by up to $85\%$ via RAM-level caching.
+* **In-Memory Caching (Redis):** A dedicated Redis cache node on port 6379, interacting via object-cache.php to bypass heavy database reads by up to 85% via RAM-level caching.
 
-* **Chrooted Multi-Tenant Gateway (FTP Bonus):** An active/passive secure `vsftpd` instance constrained within a strict POSIX jail matching the `www-data` GID, permitting secure, isolated file transfers directly into the persistent web assets directory.
+* **Chrooted FTP Gateway:** A secure vsftpd instance jailed within the www-data GID, enabling isolated file transfers directly into the persistent web root.
 
-* **Decoupled Database Management (Adminer Bonus):** A staging-isolated, low-footprint database administration manager built from an independent `php-fpm` stack on port `9000`, minimizing attack surfaces while providing a secure web UI for MariaDB engineering.
+* **Staging-Isolated Adminer:** An independent, low-footprint DB administration panel on port 9002, eliminating direct MariaDB exposure via a secure Web UI.
 
-* **Zero-Overhead Static Routing (Static Content Bonus):** Seamless delivery of a high-efficiency static resume webpage hosted through Nginx-level `alias` filesystem mapping, routing static assets instantly without consuming upstream application computing cycles.
+* **Zero-Overhead Static Routing:** Instant delivery of a static resume page via Nginx-level alias mapping, bypassing upstream application computing cycles.
+
+* **Active Container Telemetry:** Lightweight monitoring engine (3001) executing non-intrusive runtime diagnostics across the entire container cluster.
 
 #### 1.3.3  Design Choices and Trade-Off Comparisons
 
@@ -83,7 +85,7 @@ The project code is organized in a single folder (`srcs/`), making it very easy 
 | --- | --- | --- |
 | **Architecture** | Hypervisor loads a full Guest OS on top of Host hardware. | Containers share the Host OS kernel via namespaces/cgroups. |
 | **Resource Overhead** | Heavy CPU/RAM pinning for OS emulation; slow boot times. | Extremely lightweight; sub-second boot; minimal RAM footprint. |
-| **Project Rationale** | **The Project runs Docker *inside* a VM.** This provides strict hypervisor isolation from the user machine, while Docker handles local microservices decoupling. |  |
+|**Dual-Layer Isolation**(Docker-in-VM)| Docker runs inside a VM, combining strict hardware hypervisor isolation with containerized microservice decoupling. |  |
 
 #####  B. Docker Secrets vs Environment Variables
 
@@ -91,7 +93,7 @@ The project code is organized in a single folder (`srcs/`), making it very easy 
 | --- | --- | --- |
 | **Storage Context** | Hardcoded in plain text inside `docker-compose.yml` or `.env`. | Stored safely on the host disk and only exposed to memory. |
 | **Visibility** | Leaked globally via `docker inspect` or `env` runtime dumps. | **Physically isolated.** Mounted as a read-only `tmpfs` file inside `/run/secrets/`. |
-| **Project Rationale** | Avoids the leaked plain-text credentials by dynamically extracting secrets only inside active runtime memory.
+| **Project Rationale** | Dynamic Secret Extraction: Avoids plain-text leaks by extracting credentials only within active runtime memory.
 
 #####  C. Docker Custom Network vs Host Network
 
@@ -107,7 +109,7 @@ The project code is organized in a single folder (`srcs/`), making it very easy 
 | --- | --- | --- |
 | **File System Control** | Directly maps a specific, absolute directory from the host OS. | Managed entirely by Docker inside designated storage pools (`/var/lib/docker/`). |
 | **Portability & Safety** | Breaks easily if absolute host paths differ; poses file permission risks. | Highly portable, completely independent of host directory structures. |
-| **Project Rationale** | Hybrid Choice (Local-Persisted Named Volume): Captures the portability of a Named Volume block at the service layer, while leveraging driver_opts to force the physical storage back down to a visible absolute path (/home/weiyang/data/) for direct compliance auditing. |  |
+| **Project Rationale** | Local Named Volumes: Combines service-layer portability with driver_opts to force data persistence into a visible absolute path (/home/weiyang/data/) for direct auditing. |  |
 ---
 
 ## 2. Instructions
@@ -208,36 +210,13 @@ docker exec -it mariadb mysql -u root -p"db_root_password" -e "USE inception_db;
 
 ### 3.2  Technical Articles
 
-* **Mozilla TLS Observatory Standards:** [Mozilla Wiki - Server-Side TLS](https://www.google.com/search?q=https://wiki.mozilla.org/Security/Server-Side_TLS) — Followed strictly to ensure the Nginx SSL configuration satisfies modern corporate compliance.
-* **The Twelve-Factor App Methodology:** [12factor.net](https://12factor.net/) — Referenced for decoupling application state from execution contexts and handling config-via-environment best practices.
+* **Mozilla TLS Compliance:** Extracted from Mozilla Wiki for hardened corporate Nginx SSL.
+
+* **12-Factor App Design:** Sourced from 12factor.net for stateless, decoupled infrastructure.
+
 * **Cours: Apprendre Docker:** https://www.devopssec.fr/category/apprendre-docker
 
 
 ### 3.3  AI Usage Declaration
 
-In alignment with modern engineering ethics and 42 transparency requirements, artificial intelligence (specifically Gemini and Chatgpt) was utilized as an advanced architectural sparring partner and technical auditor during this project.
-
-AI was strictly leveraged to optimize operational logic, enforce structural naming conventions, and double-check protocol compliance. No black-box code was copied directly into the production layers without deep physical verification.
-
-#### Scope of AI Collaboration
-
-```text
-┌────────────────────────────────────────────────────────────────────────┐
-│                          AI USAGE MATRIX                               │
-├───────────────────────────┬────────────────────────────────────────────┤
-│ TASK CATEGORY             │ EXACT IMPLEMENTATION ARCHITECTURE          │
-├───────────────────────────┼────────────────────────────────────────────┤
-│ Technical Language &      │ Refined complex technical vocabulary       │
-│ Industrial Nomenclature   │ (e.g., Dual-Track Provisioning, Edge       │
-│                           │ Gateway Topologies) to match DevOps spec.  │
-├───────────────────────────┼────────────────────────────────────────────┤
-│ Architectural Sanity      │ Audited the edge-case trade-offs between   │
-│ Checking                  │ raw Bind Mounts and Local Named Volumes to │
-│                           │ maximize evaluation compliance.            │
-├───────────────────────────┼────────────────────────────────────────────┤
-│ Documentation Layout &    │ Formatted structural Markdown assets, file │
-│ Verification              │ tree mappings, and rigorous cross-         │
-│                           │ reference comparison tables.               │
-└───────────────────────────┴────────────────────────────────────────────┘
-
-```
+In alignment with 42 transparency requirements, Gemini and ChatGPT were leveraged as advanced architectural auditors. AI usage was strictly limited to infrastructure optimization, protocol compliance verification, and metadata formatting under strict manual code review.

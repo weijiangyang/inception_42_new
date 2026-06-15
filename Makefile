@@ -56,7 +56,7 @@ bonus: clean
 	@sudo mkdir -p $(WP_DIR)
 	@sudo mkdir -p $(REDIS_DIR)
 	@sudo mkdir -p $(RESUME_DIR)
-	@sudo cp -r assets/resume/* $(RESUME_DIR)
+	@sudo cp -r assets/resume/ $(RESUME_DIR)
 	@echo "[Makefile] Bootstrapping full stack with bonus features..."
 	@echo "[Makefile] Forcing no-cache build for mariadb image..."
 	@$(DOCKER_COMPOSE) build --no-cache mariadb
@@ -75,7 +75,7 @@ fclean: clean
 	@docker network prune -f
 
 	@echo "[Makefile] Eradicating Docker named volumes metadata explicitly..."
-	@docker volume rm srcs_mariadb_data srcs_wordpress_data srcs_resume_data srcs_redis_data 2>/dev/null || true
+	@docker volume rm srcs_mariadb_data srcs_wordpress_data srcs_resume_data srcs_redis_data monitoring_data 2>/dev/null || true
 	@echo "[Makefile] Purging unused Docker build cache and layers..."
 	@docker system prune -a -f --volumes
 
