@@ -56,7 +56,7 @@ bonus: clean
 	@sudo mkdir -p $(WP_DIR)
 	@sudo mkdir -p $(REDIS_DIR)
 	@sudo mkdir -p $(RESUME_DIR)
-	@sudo cp -r assets/resume/ $(RESUME_DIR)
+	@sudo cp -r assets/resume/ /home/weiyang/data
 	@echo "[Makefile] Bootstrapping full stack with bonus features..."
 	@echo "[Makefile] Forcing no-cache build for mariadb image..."
 	@$(DOCKER_COMPOSE) build --no-cache mariadb

@@ -11,6 +11,7 @@ services:
       - db_password
     volumes:
       - mariadb_data:/var/lib/mysql
+      - ./requirements/mariadb/conf/mariadb.conf:/etc/mysql/mariadb.conf.d/99-hardened.cnf
     networks:
       - inception_network
     restart: always
