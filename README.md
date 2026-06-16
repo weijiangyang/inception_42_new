@@ -31,6 +31,7 @@ Every service layer is strictly isolated within its own dedicated container cont
 The project code is organized in a single folder (`srcs/`), making it very easy to build and run the system step by step:
 
 ```text
+📁 assets/resume                #static page content
 📁 srcs/
 ├── 📄 docker-compose.yml       # Central multi-container orchestration matrix (with bonus profiles)
 ├── 📄 .env                     # Host-level path definitions and non-sensitive public configurations
@@ -39,6 +40,7 @@ The project code is organized in a single folder (`srcs/`), making it very easy 
 │   ├── 📄 db_root_password.txt # MariaDB root administrative supreme passkey
 │   ├── 📄 wp_admin_password.txt# WordPress dashboard super-administrator login secret
 │   └── 📄 wp_user_password.txt # WordPress collaborative author unprivileged account credential
+    └── 📄 ftp_password.txt     # ftp account credential
 └── 📁 requirements/            
     ├── 📁 mariadb/             # MariaDB container scripts, custom server configuration and secrets parsing
     ├── 📁 nginx/               # TLS v1.2/v1.3 matrix settings and dynamic route blocking configuration
@@ -49,7 +51,9 @@ The project code is organized in a single folder (`srcs/`), making it very easy 
     └── 📁 bonus/               #  [42 STANDARD] Advanced Microservices Profiling Segment
         ├── 📁 adminer/         # Staging-isolated handcrafted DB administration panel
         ├── 📁 ftp/             # Chrooted secure vsftpd server configuration jail
-        └── 📁 redis/           # Redis In-Memory Volatile Acceleration store
+        ├─  📁 redis/           # Redis In-Memory Volatile Acceleration store
+        └── 📁 monitoring/      # Monitoring 
+
 📄 Makefile                     # Global infrastructure lifecycle automation control panel
 ```
 
